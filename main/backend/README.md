@@ -1,6 +1,6 @@
 # Go backend
 
-The first runnable backend slice uses Go 1.27, standard-library `net/http`, and a pure-Go SQLite driver. It provides liveness, readiness, service status, an OpenAPI 3.1 contract, and an embedded Swagger UI. Authentication, host metrics, cloud synchronization, command handling, and frontend serving remain later milestones.
+The runnable backend uses Go 1.27, standard-library `net/http`, and a pure-Go SQLite driver. It provides liveness, readiness, service status, persisted application registration, HTTP(S) reachability checks, an OpenAPI 3.1 contract, and an embedded Swagger UI. Authentication, host metrics, cloud synchronization, command handling, and frontend serving remain later milestones.
 
 The implemented entrypoint is `cmd/lighthouse`. The planned `cmd/host-helper` will remain a separate binary in this module and will be installed on the host rather than run inside the application container.
 
@@ -28,6 +28,8 @@ go vet ./...
 ```
 
 SQLite initialization and versioned migrations are implemented as the persistence foundation. Later migrations will add administrator/session state, the retry outbox, and action ledgers. Persist intent before dispatch; retry result uploads without re-executing commands. Manual and cloud-board actions converge on the same command path.
+
+Applications are registered through `POST /api/v1/applications` with a name, a `docker` or `systemd` runtime, and at least one internal or external HTTP(S) address. `GET /api/v1/applications` checks the internal address first and then the external address; any response below HTTP 500 is reported as online. This is an address-reachability signal, not direct Docker or systemd process inspection.
 
 Use a local administrator login with hashed credentials and secure cookie sessions, independently of Cloudflare. Outbound HTTPS publishes startup/hourly/after-action telemetry and retrieves commands using a scoped sync token. The M0 spike has no host-helper access. Sync and manual operations remain independent of Ollama; MCP and chat come later.
 

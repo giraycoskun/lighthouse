@@ -3,10 +3,10 @@ info:
   title: Lighthouse API
   version: 0.1.0
   description: >-
-    Minimal API for the Lighthouse home-server dashboard. This first version
-    exposes service health, readiness, and runtime information. Authentication,
-    host metrics, cloud synchronization, and confirmed commands are intentionally
-    outside this initial contract.
+    Minimal API for the Lighthouse home-server dashboard. It exposes service
+    health, runtime information, and application registration with reachability
+    checks. Authentication, host metrics, cloud synchronization, and confirmed
+    commands are intentionally outside this initial contract.
 license:
   name: Private
 servers:
@@ -16,6 +16,8 @@ tags:
     description: Container orchestration and operational probes.
   - name: System
     description: Non-sensitive service runtime information.
+  - name: Applications
+    description: Applications monitored by Lighthouse.
 paths:
   /api/v1/health/live:
     get:
@@ -59,6 +61,54 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/StatusResponse'
+  /api/v1/applications:
+    get:
+      operationId: listApplications
+      summary: List registered applications and their current reachability
+      tags: [Applications]
+      responses:
+        '200':
+          description: Registered applications ordered by name.
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                required: [applications]
+                properties:
+                  applications:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Application'
+    post:
+      operationId: createApplication
+      summary: Register an application
+      tags: [Applications]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateApplicationRequest'
+      responses:
+        '201':
+          description: Application created and checked.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Application'
+        '400':
+          description: The request body is not valid JSON.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '422':
+          description: One or more fields are invalid.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 components:
   schemas:
     HealthResponse:
@@ -104,6 +154,65 @@ components:
         current_time:
           type: string
           format: date-time
+    CreateApplicationRequest:
+      type: object
+      additionalProperties: false
+      required: [name, runtime]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 120
+        runtime:
+          type: string
+          enum: [docker, systemd]
+        internal_address:
+          type: [string, 'null']
+          format: uri
+        external_address:
+          type: [string, 'null']
+          format: uri
+      anyOf:
+        - required: [internal_address]
+        - required: [external_address]
+    Application:
+      type: object
+      additionalProperties: false
+      required: [id, name, runtime, internal_address, external_address, created_at, status]
+      properties:
+        id:
+          type: integer
+          format: int64
+        name:
+          type: string
+        runtime:
+          type: string
+          enum: [docker, systemd]
+        internal_address:
+          type: [string, 'null']
+          format: uri
+        external_address:
+          type: [string, 'null']
+          format: uri
+        created_at:
+          type: string
+          format: date-time
+        status:
+          $ref: '#/components/schemas/ApplicationStatus'
+    ApplicationStatus:
+      type: object
+      additionalProperties: false
+      required: [state, checked_at, reachable_address]
+      properties:
+        state:
+          type: string
+          enum: [online, offline]
+        checked_at:
+          type: string
+          format: date-time
+        reachable_address:
+          type: [string, 'null']
+          format: uri
     ErrorResponse:
       type: object
       additionalProperties: false

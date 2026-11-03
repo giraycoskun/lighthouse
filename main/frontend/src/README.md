@@ -1,6 +1,6 @@
 # Local web application
 
-The first React/Vite/TypeScript dashboard consumes the backend readiness and status endpoints. It displays API health, SQLite readiness, backend version, process uptime, runtime timestamps, and links to Swagger UI and the OpenAPI source. Unsupported capabilities are listed as future work instead of displaying synthetic data.
+The React/Vite/TypeScript dashboard consumes the backend readiness, status, and application endpoints. It displays API health, SQLite readiness, backend version, process uptime, runtime timestamps, and registered application reachability. The add-application page accepts a Docker or systemd runtime and at least one internal or external HTTP(S) address. Swagger UI remains linked from the footer.
 
 ## Run locally
 
