@@ -1,0 +1,120 @@
+openapi: 3.1.0
+info:
+  title: Lighthouse API
+  version: 0.1.0
+  description: >-
+    Minimal API for the Lighthouse home-server dashboard. This first version
+    exposes service health, readiness, and runtime information. Authentication,
+    host metrics, cloud synchronization, and confirmed commands are intentionally
+    outside this initial contract.
+license:
+  name: Private
+servers:
+  - url: /
+tags:
+  - name: Health
+    description: Container orchestration and operational probes.
+  - name: System
+    description: Non-sensitive service runtime information.
+paths:
+  /api/v1/health/live:
+    get:
+      operationId: getLiveness
+      summary: Check whether the HTTP process is alive
+      tags: [Health]
+      responses:
+        '200':
+          description: The process is alive.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+  /api/v1/health/ready:
+    get:
+      operationId: getReadiness
+      summary: Check whether required dependencies are ready
+      tags: [Health]
+      responses:
+        '200':
+          description: The service and database are ready.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReadinessResponse'
+        '503':
+          description: At least one required dependency is unavailable.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v1/status:
+    get:
+      operationId: getStatus
+      summary: Get non-sensitive service runtime information
+      tags: [System]
+      responses:
+        '200':
+          description: Current service status.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StatusResponse'
+components:
+  schemas:
+    HealthResponse:
+      type: object
+      additionalProperties: false
+      required: [status]
+      properties:
+        status:
+          type: string
+          const: ok
+    ReadinessResponse:
+      type: object
+      additionalProperties: false
+      required: [status, checks]
+      properties:
+        status:
+          type: string
+          const: ok
+        checks:
+          type: object
+          additionalProperties: false
+          required: [database]
+          properties:
+            database:
+              type: string
+              const: ok
+    StatusResponse:
+      type: object
+      additionalProperties: false
+      required: [service, version, status, started_at, current_time]
+      properties:
+        service:
+          type: string
+          const: lighthouse
+        version:
+          type: string
+        status:
+          type: string
+          const: ok
+        started_at:
+          type: string
+          format: date-time
+        current_time:
+          type: string
+          format: date-time
+    ErrorResponse:
+      type: object
+      additionalProperties: false
+      required: [error]
+      properties:
+        error:
+          type: object
+          additionalProperties: false
+          required: [code, message]
+          properties:
+            code:
+              type: string
+            message:
+              type: string
